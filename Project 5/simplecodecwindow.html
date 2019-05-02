@@ -1,0 +1,174 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>simplecodecwindow</title><meta name="generator" content="MATLAB 9.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-04-30"><meta name="DC.source" content="simplecodecwindow.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="comment">%Program 11.1 Audio codec</span>
+<span class="comment">%input: vector x of input signal</span>
+<span class="comment">%output: vector out of output signal</span>
+<span class="comment">%Example usage: out=simplecodec(cos((1:2^(12))*2*pi*256/2^(13)));</span>
+<span class="comment">%               example signal is 1/2 sec. pure tone of frequency f = 256</span>
+<span class="keyword">function</span> out=simplecodecwindow(x)
+len=length(x);
+n=2^5;                                <span class="comment">% length of window</span>
+nw=floor(len/n);                      <span class="comment">% number of length n windows in x</span>
+x=x(1:n*nw);                          <span class="comment">% cut x to integer number of n windows</span>
+<span class="comment">%Fs=2^(13);</span>
+Fs=44100;                            <span class="comment">% Fs=sampling rate</span>
+b=8; L=0.3;                           <span class="comment">% b = quantization bits, [-L,L] amplitude range</span>
+q=2*L/(2^b-1);                        <span class="comment">% q used for b bits on interval [-L, L]</span>
+<span class="keyword">for</span> i=1:n                             <span class="comment">% form the MDCT matrix</span>
+  <span class="keyword">for</span> j=1:2*n
+    M(i,j)= cos((i-1+1/2)*(j-1+1/2+n/2)*pi/n);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+M=sqrt(2/n)*M;
+N=M';                                 <span class="comment">% inverse MDCT</span>
+<span class="comment">%x=cos((1:T*Fs)*2*pi*64*f/Fs);         % test signal</span>
+<span class="comment">%x=x+cos((1:4096)*2*pi*64*5/Fs);</span>
+<span class="comment">%x=x+cos((1:4096)*2*pi*64*6/Fs);</span>
+x=0.3*x/max(abs(x));                  <span class="comment">% normalize signal to max amplitude = 0.3</span>
+sound(x,Fs)                           <span class="comment">% Matlab's sound command</span>
+out=[];
+<span class="keyword">for</span> k=1:nw-1                          <span class="comment">% loop over l ength 2n windows</span>
+  x0=x(1+(k-1)*n:2*n+(k-1)*n)';
+  j = 1:2*n;
+  h = sqrt(2)*sin((j-0.5)*pi/(2*n))';
+  y0=M*(x0.*h);
+  y1=round(y0/q);                     <span class="comment">% transform components quantized</span>
+<span class="comment">% Storage/transmission of file occurs here</span>
+  y2=y1*q;                            <span class="comment">% transform components dequantized</span>
+  w(:,k)=(N*y2).*h;                        <span class="comment">% invert the MDCT</span>
+  <span class="keyword">if</span>(k&gt;1)
+      w2=w(n+1:2*n,k-1);w3=w(1:n,k);
+      out=[out;(w2+w3)/2];          <span class="comment">% collect the reconstructed signal</span>
+  <span class="keyword">end</span>                                 <span class="comment">% (of length 2n less than length of x)</span>
+<span class="keyword">end</span>
+pause(1)
+sound(out,Fs)                         <span class="comment">% play the reconstructed tone</span>
+audiowrite(<span class="string">'Better8bitwindow.wav'</span>, out, Fs);
+xshort = x(n+1:end-n);
+plot(xshort(1:100))
+hold <span class="string">on</span>
+rmse_result = norm(xshort'-out)/sqrt(length(xshort))
+plot(out(1:100))
+</pre><!--
+##### SOURCE BEGIN #####
+%Program 11.1 Audio codec
+%input: vector x of input signal
+%output: vector out of output signal
+%Example usage: out=simplecodec(cos((1:2^(12))*2*pi*256/2^(13)));
+%               example signal is 1/2 sec. pure tone of frequency f = 256
+function out=simplecodecwindow(x)
+len=length(x);
+n=2^5;                                % length of window
+nw=floor(len/n);                      % number of length n windows in x
+x=x(1:n*nw);                          % cut x to integer number of n windows
+%Fs=2^(13);
+Fs=44100;                            % Fs=sampling rate
+b=8; L=0.3;                           % b = quantization bits, [-L,L] amplitude range
+q=2*L/(2^b-1);                        % q used for b bits on interval [-L, L]
+for i=1:n                             % form the MDCT matrix
+  for j=1:2*n
+    M(i,j)= cos((i-1+1/2)*(j-1+1/2+n/2)*pi/n);
+  end
+end
+M=sqrt(2/n)*M;
+N=M';                                 % inverse MDCT
+%x=cos((1:T*Fs)*2*pi*64*f/Fs);         % test signal
+%x=x+cos((1:4096)*2*pi*64*5/Fs); 
+%x=x+cos((1:4096)*2*pi*64*6/Fs);
+x=0.3*x/max(abs(x));                  % normalize signal to max amplitude = 0.3
+sound(x,Fs)                           % Matlab's sound command
+out=[];
+for k=1:nw-1                          % loop over l ength 2n windows
+  x0=x(1+(k-1)*n:2*n+(k-1)*n)';
+  j = 1:2*n;
+  h = sqrt(2)*sin((j-0.5)*pi/(2*n))';
+  y0=M*(x0.*h);
+  y1=round(y0/q);                     % transform components quantized
+% Storage/transmission of file occurs here  
+  y2=y1*q;                            % transform components dequantized
+  w(:,k)=(N*y2).*h;                        % invert the MDCT
+  if(k>1)
+      w2=w(n+1:2*n,k-1);w3=w(1:n,k);
+      out=[out;(w2+w3)/2];          % collect the reconstructed signal
+  end                                 % (of length 2n less than length of x)
+end
+pause(1)
+sound(out,Fs)                         % play the reconstructed tone
+audiowrite('Better8bitwindow.wav', out, Fs);
+xshort = x(n+1:end-n);
+plot(xshort(1:100))
+hold on 
+rmse_result = norm(xshort'-out)/sqrt(length(xshort))
+plot(out(1:100))
+
+
+
+
+##### SOURCE END #####
+--></body></html>

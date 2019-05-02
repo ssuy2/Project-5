@@ -1,0 +1,207 @@
+<html>
+<head>
+<style type="text/css">
+table, th, td {border: 1px solid black; border-collapse: collapse;}
+div.ex1 {
+	overflow: visible;
+}
+</style>
+<title>Project 5: Audio Compression</title>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body bgcolor=#FFFFFF>
+<center>
+<h1>Project 5: Audio Compression</h1>
+<h2>Sophaktra Suy</h2>
+</center>
+
+<p>In this project, we will be using the MDCT (Modified Discrete Cosine Transform) to compress audio signal frequencies and audio files by applying it to an input window of \(2n\) that will approximate the data. Compression is done by quantisizing the bits and allocating them to different frequencies.</p>
+
+<h3><u>Problem 1</u></h3>
+
+<p>Changing the bits to 4, window size n to 32, and frequency to 436 Hz gave an RMSE of 0.0086.</p>
+<center><b>436 Hz Frequency Using 4 Bits</b><br>
+<img src="plotq1.png" alt="436 Hz Frequency Using 4 Bits"></center><br>
+
+<center>
+<b>Original 436 Hz Signal</b><br>
+<audio controls>
+	<source src="436Hz.wav" type="audio/wav">
+</audio><br><br>
+<b>Decoded 436 Hz Signal</b><br>
+<audio controls>
+	<source src="436Hz(compress).wav" type="audio/wav">
+</audio><br><br>
+</center>
+
+<h3><u>Problem 2</u></h3>
+Building chords requires the signal to be added by multiple pure tones. For this chord, the signal is being added with double its frequency.
+The resulting RMSE came out to be 0.0086 for 4 bits but when the number of bits increases, the RMSE decreases which indicates a better fit.<p>
+<center><b>436 Hz Frequency with Octave Chord</b><p>
+<img src="plotq2.png" alt="436 Hz Frequency with Octave Chord"></center><br>
+
+<center><table style="width:10%">
+	<tr>
+		<th>Bits</th><th>RMSE</th>
+	</tr>
+	<tr>
+		<td>4</td><td>0.0086</td>
+	</tr>
+	<tr>
+		<td>5</td><td>0.0040</td>
+	</tr>
+	<tr>
+		<td>6</td><td>0.0020</td>
+	</tr>
+	<tr>
+		<td>7</td><td>0.000957</td>
+	</tr>
+	<tr>
+		<td>8</td><td>0.000483</td>
+	</tr></table></center>
+<br>
+
+<center>
+<b>Original 436 Hz Signal with Chord</b><br>
+<audio controls>
+	<source src="436Hzchord.wav" type="audio/wav">
+</audio><br><br>
+<b>Decoded 436 Hz Signal with Chord</b><br>
+<audio controls>
+	<source src="436Hzchord(compress).wav" type="audio/wav">
+</audio><br><br>
+</center>
+
+<h3><u>Problem 3</u></h3>
+<p>A windowing function will be used to reduce codec error which helps decrease the value near the endpoints to zero.
+Using the windowing function increases the sound quality of the signal. Utilizing the windowing function with the 436 Hz signal
+gives an RMSE of 0.0049 which is approximately half of what we got from problem 1.</p>
+<center><b>436 Hz Frequency with Windowing</b><br>
+<img src="plotq3.png" alt="436 Hz Frequency with Windowing"></center><br>
+
+<center>
+<b>Original 436 Hz Signal with Windowing</b><br>
+<audio controls>
+	<source src="436Hzwindow.wav" type="audio/wav">
+</audio><br><br>
+<b>Decoded 436 Hz Signal with Windowing</b><br>
+<audio controls>
+	<source src="436Hzwindow(compress).wav" type="audio/wav">
+</audio><br><br>
+</center>
+
+<h3><u>Problem 4</u></h3>
+<p>The windowing function that was used in problem 3 is explained in this problem. \(Z_1\) and \(Z_2\) with length \(2n\) multiplied componently with our windowing function \(h\).</p>
+$$h_j=\sqrt{2}sin\frac{(j-\frac{1}{2})\pi}{2n}$$
+$$Z_1=\begin{bmatrix}x_1\\x_2\\x_3\\x_4\end{bmatrix}\qquad 
+Z_2=\begin{bmatrix}x_3\\x_4\\x_5\\x_6\end{bmatrix}$$
+$$hZ_1=\begin{bmatrix}h_1\\h_2\\h_3\\h_4\end{bmatrix}\circ \begin{bmatrix}x_1\\x_2\\x_3\\x_4\end{bmatrix}\qquad hZ_2=\begin{bmatrix}h_1\\h_2\\h_3\\h_4\end{bmatrix}\circ \begin{bmatrix}x_3\\x_4\\x_5\\x_6\end{bmatrix}$$<br>
+
+<p>To reverse the windowing, an NM matrix needs to be created where A and B are the left and right halves of the DCT matrix and R reverses the matrix.</p><br>
+$$M_x=Bx_1-BRx_2-ARx_3-Ax_4$$
+$$M=\begin{bmatrix}B\\-RB\\-RA\\-A\end{bmatrix}\qquad N=\begin{bmatrix}B^T\\-RB^T\\-RA^T\\-A^T\end{bmatrix}$$<br>
+
+<p>The NM matrix is then multiplied componently with the \(hZ_1\) and \(hZ_2\) which is then multiplied with h again to undo the windowing function.
+$$NMhZ_1=\begin{bmatrix}B^T\\-RB^T\\-RA^T\\-A^T\end{bmatrix}[A(-R(h_3x_3)-h_4x_4)+B(h_1x_1-R(h_2x_2))]=\begin{bmatrix}h_1x_1-R(h_2x_2)\\-R(h_1x_1)+h_2x_2\\h_3x_3+R(h_4x_4)\\R(h_3x_3)+h_4x_4\end{bmatrix}\circ \begin{bmatrix}h_1\\h_2\\h_3\\h_4\end{bmatrix}
+=\begin{bmatrix}h_1^2x_1-h_1R(h_2x_2)\\-h_2R(h_1x_1)+h_2^2x_2\\h_3^2x_3+h_3R(h_4x_4)\\h_4R(h_3x_3)+h_4^2x_4\end{bmatrix}$$
+$$NMhZ_2=\begin{bmatrix}B^T\\-RB^T\\-RA^T\\-A^T\end{bmatrix}[A(-R(h_3x_5)-h_4x_6)+B(h_1x_3-R(h_2x_4))]=\begin{bmatrix}h_1x_3-R(h_2x_4)\\-R(h_1x_3)+h_2x_4\\h_3x_5+R(h_4x_6)\\R(h_3x_5)+h_4x_6\end{bmatrix}\circ \begin{bmatrix}h_1\\h_2\\h_3\\h_4\end{bmatrix}
+=\begin{bmatrix}h_1^2x_3-h_1R(h_2x_4)\\-h_2R(h_1x_3)+h_2^2x_4\\h_3^2x_5+h_3R(h_4x_6)\\h_4R(h_3x_5)+h_4^2x_6\end{bmatrix}$$<br>
+
+<p>Next step is to determine if \(x_3\) and \(x_4\) didn't change because of the windowing function by averaging out the bottom half of \(NMZ_1\) and the top half of \(NMZ_2\).</p>
+$$\begin{bmatrix}x_3\\x_4\end{bmatrix}=\frac{1}{2}(NMZ_1)_{n,...,2n-1}+\frac{1}{2}(NMZ_2)_{0,...,n-1}$$
+$$x_3=\frac{1}{2}[h_3^2x_3+h_3R(h_4x_4)+h_1^2x_3-h_1R(h_2x_4)]$$
+$$x_3=\frac{1}{2}[h_3^2x_3+h_3h_1R(x_4)+h_1^2x_3-h_1h_3R(x_4)]$$
+$$x_3=\frac{1}{2}[h_3^2x_3+h_1^2x_3]$$
+$$x_3=\frac{1}{2}x_3[h_3^2+h_1^2]$$<br>
+
+<p>For \(x_3\), \(h_1\) covers the window of \(2n\) by \(j=1,...,\frac{n}{2}\) and \(h_3\) covers by \(j=n+1,...,\frac{3n}{2}\). Plug this \(j\) back into the \(h_j\) equation and substitute for \(h_1\) and \(h_3\).</p>
+$$x_3=\frac{1}{2}x_3\left[2sin^2\left(\frac{(n+1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_3=\frac{1}{2}x_3\left[2sin^2\left(\frac{\pi}{2}+\frac{(1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_3=\frac{1}{2}x_3\left[2cos^2\left(\frac{(1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_3=\frac{1}{2}x_3\cdot2$$
+$$x_3=x_3$$<br>
+
+<p>Next is \(x_4\) which is similar to \(x_3\) but \(h_2\) covers \(j=\frac{n}{2}+1,...,n\) and \(h_4\) covers \(j=\frac{3n}{2}+1,...,2n\).</p>
+$$x_4=\frac{1}{2}[h_4R(h_3x_3)+h_4^2x_4-h_2R(h_1x_3)+h_2^2x_4]$$
+$$x_4=\frac{1}{2}[h_4h_2R(x_3)+h_4^2x_4-h_2h_4R(x_3)+h_2^2x_4)]$$
+$$x_4=\frac{1}{2}[h_4^2x_4+h_2^2x_4]$$
+$$x_4=\frac{1}{2}x_4[h_4^2+h_2^2]$$<br>
+
+$$x_4=\frac{1}{2}x_4\left[2sin^2\left(\frac{(\frac{3n}{2}+1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(\frac{n}{2}+1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_4=\frac{1}{2}x_4\left[2sin^2\left(\frac{\pi}{2}+\frac{(\frac{n}{2}+1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(\frac{n}{2}+1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_4=\frac{1}{2}x_4\left[2cos^2\left(\frac{(\frac{n}{2}+1-\frac{1}{2})\pi}{2n}\right)+2sin^2\left(\frac{(\frac{n}{2}+1-\frac{1}{2})\pi}{2n}\right)\right]$$
+$$x_4=\frac{1}{2}x_4\cdot2$$
+$$x_4=x_4$$<br>
+
+<h3><u>Problem 5</u></h3>
+<p>The song chosen to encode/decode is "Better" by Khalid which is shortened to a specific part of the song.
+Below will show the songs coded with quantization bits of 2, 4, 6, 8 with and without windowing.</p>
+
+<p>2 quantization bits without windowing has an RMSE of 0.0216 and with windowing gives 0.0141.
+<center><b>"Better" at 2 bit without windowing</b><br>
+<img src="plot2bit-nowindow.png" alt='"Better" at 2 bit without windowing'><br>
+<b>"Better" at 2 bit without Windowing</b><br>
+<audio controls>
+	<source src="Better2bit.wav" type="audio/wav">
+</audio><br><br>
+<b>"Better" at 2 bit with windowing</b><br>
+<img src="plot2bit-window.png" alt='"Better" at 2 bit with windowing'><br>
+<b>"Better" at 2 bit with Windowing</b><br>
+<audio controls>
+	<source src="Better2bitwindow.wav" type="audio/wav">
+</audio></center><br><br>
+
+<p>4 quantization bits without windowing has an RMSE of 0.0069 and with windowing gives 0.0041.</p>
+<center><b>"Better" at 4 bit without windowing</b><br>
+<img src="plot4bit-nowindow.png" alt='"Better" at 4 bit without windowing'><br>
+<b>"Better" at 4 bit without Windowing</b><br>
+<audio controls>
+	<source src="Better4bit.wav" type="audio/wav">
+</audio><br><br>
+<b>"Better" at 4 bit with windowing</b><br>
+<img src="plot4bit-window.png" alt='"Better" at 4 bit with windowing'><br>
+<b>"Better" at 4 bit with Windowing</b><br>
+<audio controls>
+	<source src="Better4bitwindow.wav" type="audio/wav">
+</audio></center><br><br>
+
+<p>6 quantization bits without windowing has an RMSE of 0.0019 and with windowing gives 0.0012.</p>
+<center><b>"Better" at 6 bit without windowing</b><br>
+<img src="plot6bit-nowindow.png" alt='"Better" at 6 bit without windowing'><br>
+<b>"Better" at 6 bit without Windowing</b><br>
+<audio controls>
+	<source src="Better6bit.wav" type="audio/wav">
+</audio><br><br>
+<b>"Better" at 6 bit with windowing</b><br>
+<img src="plot6bit-window.png" alt='"Better" at 6 bit with windowing'><br>
+<b>"Better" at 6 bit with Windowing</b><br>
+<audio controls>
+	<source src="Better6bitwindow.wav" type="audio/wav">
+</audio></center><br><br>
+
+<p>8 quantization bits without windowing has an RMSE of 0.000479 and with windowing gives 0.000365.</p>
+<center><b>"Better" at 8 bit without windowing</b><br>
+<img src="plot8bit-nowindow.png" alt='"Better" at 8 bit without windowing'><br>
+<b>"Better" at 8 bit without Windowing</b><br>
+<audio controls>
+	<source src="Better8bit.wav" type="audio/wav">
+</audio><br><br>
+<b>"Better" at 8 bit with windowing</b><br>
+<img src="plot8bit-window.png" alt='"Better" at 8 bit with windowing'><br>
+<b>"Better" at 8 bit with Windowing</b><br>
+<audio controls>
+	<source src="Better8bitwindow.wav" type="audio/wav">
+</audio><br><br>
+
+<b>"Better" by Khalid</b><br>
+<audio controls>
+	<source src="06 - Better.mp3" type="audio/mpeg">
+</audio></center><br><br>
+
+<center><p><b><u>Matlab Code</u></b></p>
+<div class = "ex1"><object width="650" height="850" data="simplecodec.html"></object>
+<object width="650" height="865" data="simplecodecwindow.html"></object>
+<object width="650" height="200" data="output.html"></object></div>
+</center>
+</body>
+</html>

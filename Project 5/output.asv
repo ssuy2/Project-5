@@ -1,0 +1,6 @@
+signal = cos((1:2^(12))*2*pi*436/2^(13));
+%signal = cos((1:2^(12))*2*pi*(436*2)/2^(13)) + signal;
+out = simplecodec(signal);
+audiowrite(
+%f = audioread('Better (cut).wav');
+%simplecodecwindow(f);
